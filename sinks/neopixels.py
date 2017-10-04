@@ -94,10 +94,12 @@ def setup(config, stub=False):
 
 
     if stub:
+        provider = NeoPixel_Stub
+        print "Using neopixel stub only"
+    else:
         from neopixel import *
         provider = Adafruit_NeoPixel
-    else:
-        provider = NeoPixel_Stub
+        print "Using actual neopixel"
 
     __strip__ = provider(\
         neoConfig['LED_COUNT'],\
@@ -168,11 +170,14 @@ class NeoPixel_Stub:
         print "Setting pixel %s color %s" % (pixel, color)
         return
 
-class Color:
-    def __init__(self, R, G, B):
-        self.R = R
-        self.G = G
-        self.B = B
+# Reproduce the neopixels utlity function
+def Color(red, green, blue, white = 0):
+    """Convert the provided red, green, blue color to a 24-bit color value.
+    Each color component should be a value 0-255 where 0 is the lowest intensity
+    and 255 is the highest intensity.
+    """
+    return (white << 24) | (red << 16)| (green << 8) | blue
+
 
 
 __patterns__ = {\
@@ -196,8 +201,13 @@ if __name__ == "__main__":
     #    LED_BRIGHTNESS: 20 # Set to 0 for darkest and 255 for brightest
     #    LED_INVERT: False 
 
+    stubbing = False
+    if sys.argv[1] == "stub":
+        stubbing = True
+
     setup({'config': {'LED_COUNT': 8, 'LED_PIN': 18, 'LED_FREQ_HZ': 800000, 'LED_DMA': 5, 'LED_BRIGHTNESS': 20, 'LED_INVERT': False}, \
-           'sink': {} })
+           'sink': {} },
+           stub=stubbing)
 
     #  GitCommitPixels:
     #      LEDS: 1-2
@@ -205,5 +215,8 @@ if __name__ == "__main__":
     #      PatternMap:
     #        '1': Blink
     #        '2': Chaser
-    match = re.match("Ping (\d+)", sys.argv[1])
-    playPixels({'LEDS': '4-10', 'regex': 'Play (\d+)', 'PatternMap': { '1': 'blink', '2': 'theaterChase', '3': 'colorWipe', '4': 'rainbow', '5': 'rainbowCycle', '6': 'theaterChaseRainbow' }}, match)
+    match = re.match("Play (\d+)", sys.argv[2])
+    playPixels({'LEDS': '4-10', 'regex': 'Play (\d+)',\
+                'PatternMap': { '1': 'blink', '2': 'theaterChase', '3': 'colorWipe', '4': 'rainbow', '5': 'rainbowCycle', '6': 'theaterChaseRainbow' }},\
+                 match,
+                 )
