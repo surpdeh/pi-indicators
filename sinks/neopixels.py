@@ -205,7 +205,7 @@ if __name__ == "__main__":
     if sys.argv[1] == "stub":
         stubbing = True
 
-    setup({'config': {'LED_COUNT': 8, 'LED_PIN': 18, 'LED_FREQ_HZ': 800000, 'LED_DMA': 5, 'LED_BRIGHTNESS': 20, 'LED_INVERT': False}, \
+    setup({'config': {'LED_COUNT': 32, 'LED_PIN': 18, 'LED_FREQ_HZ': 800000, 'LED_DMA': 5, 'LED_BRIGHTNESS': 10, 'LED_INVERT': False}, \
            'sink': {} },
            stub=stubbing)
 
@@ -216,7 +216,7 @@ if __name__ == "__main__":
     #        '1': Blink
     #        '2': Chaser
     match = re.match("Play (\d+)", sys.argv[2])
-    playPixels({'LEDS': '4-10', 'regex': 'Play (\d+)',\
+    playPixels({'LEDS': '1-32', 'regex': 'Play (\d+)',\
                 'PatternMap': { '1': 'blink', '2': 'theaterChase', '3': 'colorWipe', '4': 'rainbow', '5': 'rainbowCycle', '6': 'theaterChaseRainbow' }},\
                  match,
                  )
