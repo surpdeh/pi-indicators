@@ -29,13 +29,17 @@ pi-indicator-config:
         LED_INVERT: False 
       sink:
         GitCommitPixels:
-          LEDS: 1-2
-          regex: Ping (\d+)
+          LEDS: 1-8
+          regex: Commit
+          pattern: blink
+        OtherPixels:
+          LEDS: 9-24
+          regex: Play pattern (\d+)
           PatternMap:
             '1': Blink
-            '2': Chaser
-        OtherPixels:
-          LEDS: 3-10
-          regex: (.*)
-          Pattern: Blink
+            '2': theaterChase
+            '3': colorWipe
+            '4': rainbow
+            '5': rainbowCycle
+            '6': theaterChaseRainbow
 

@@ -1,18 +1,76 @@
 import time
 import re
-from neopixel import *
 
-def theaterChase(strip, pixelmap, color, wait_ms=50, iterations=10):
+def blink(strip, pixelmap, wait_ms=500, iterations=10):
+    """Simple 5 seconds of blinking 50% duty cycle"""
+    color = Color(127, 127, 127)
+    for j in range(iterations):
+        for c in (0, 1):
+            for i in range(0, len(pixelmap)):
+                strip.setPixelColor(pixelmap[i], color if c==0 else 0) 
+            strip.show()
+            time.sleep(wait_ms/1000.0)
+
+
+def theaterChase(strip, pixelmap, wait_ms=50, iterations=10):
     """Movie theater light style chaser animation."""
+    color = Color(127, 127, 127)
     for j in range(iterations):
         for q in range(3):
             for i in range(0, len(pixelmap), 3):
-                print "q: %s  i: %s  i+q: %s  len(pixelmap): %s" % (q, i, i+q, len(pixelmap))
-                strip.setPixelColor(pixelmap[(i+q) %  len(pixelmap)]-1, color)
+                strip.setPixelColor(pixelmap[(i+q) %  len(pixelmap)], color)
             strip.show()
             time.sleep(wait_ms/1000.0)
             for i in range(0, len(pixelmap), 3):
-                strip.setPixelColor(pixelmap[(i+q) % len(pixelmap)]-1, 0)
+                strip.setPixelColor(pixelmap[(i+q) % len(pixelmap)], 0)
+    strip.show()
+
+def colorWipe(strip, pixelmap, wait_ms=50):
+    """Wipe color across display a pixel at a time."""
+    color = Color(127, 127, 127)
+    for i in range(len(pixelmap)):
+        strip.setPixelColor(pixelmap[i], color)
+        strip.show()
+        time.sleep(wait_ms/1000.0)
+
+def wheel(pos):
+    """"Generate rainbow colors across 0-255 positions."""
+    if pos < 85:
+        return Color(pos * 3, 255 - pos * 3, 0)
+    elif pos < 170:
+        pos -= 85
+        return Color(255 - pos * 3, 0, pos * 3)
+    else:
+        pos -= 170
+        return Color(0, pos * 3, 255 - pos * 3)
+
+def rainbow(strip, pixelmap, wait_ms=20, iterations=1):
+    """Draw rainbow that fades across all pixels at once."""
+    for j in range(256*iterations):
+        for i in range(len(pixelmap)):
+            strip.setPixelColor(pixelmap[i], wheel((i+j) & 255))
+        strip.show()
+        time.sleep(wait_ms/1000.0)
+
+def rainbowCycle(strip, pixelmap, wait_ms=20, iterations=5):
+    """Draw rainbow that uniformly distributes itself across all pixels."""
+    for j in range(256*iterations):
+        for i in range(len(pixelmap)):
+            strip.setPixelColor(pixelmap[i], wheel((int(i * 256 / len(pixelmap)) + j) & 255))
+        strip.show()
+        time.sleep(wait_ms/1000.0)
+
+def theaterChaseRainbow(strip, pixelmap, wait_ms=50):
+    """Rainbow movie theater light style chaser animation."""
+    for j in range(256):
+        for q in range(3):
+            for i in range(0, len(pixelmap), 3):
+                strip.setPixelColor(pixelmap[(i+q) % len(pixelmap)], wheel((i+j) % 255))
+            strip.show()
+            time.sleep(wait_ms/1000.0)
+            for i in range(0, len(pixelmap), 3):
+                strip.setPixelColor(pixelmap[(i+q) % len(pixelmap)], 0)
+
 
 # Create NeoPixel object with appropriate configuration.
     # shield:
@@ -29,14 +87,19 @@ def theaterChase(strip, pixelmap, color, wait_ms=50, iterations=10):
     #       LEDS: 1-2
     #       Pattern: $event
 
-def setup(config):
+def setup(config, stub=False):
     global __strip__
     sinks = {}
     neoConfig = config['config']
 
 
-    __strip__ = Adafruit_NeoPixel(\
-    #__strip__ = NeoPixel_Stub(\
+    if stub:
+        from neopixel import *
+        provider = Adafruit_NeoPixel
+    else:
+        provider = NeoPixel_Stub
+
+    __strip__ = provider(\
         neoConfig['LED_COUNT'],\
         neoConfig['LED_PIN'],\
         neoConfig['LED_FREQ_HZ'],\
@@ -56,8 +119,9 @@ def setup(config):
 
 def playPixels(config, match):
     global __strip__
+    global __patterns__
 
-    pattern = "Blink"  # default
+    pattern = "blink"  # default
     if config.get('PatternMap'):
         if config['PatternMap'].get(match.group(1)):
             pattern = config['PatternMap'][match.group(1)]
@@ -71,16 +135,23 @@ def playPixels(config, match):
             print "Error - no PatternMap or Pattern given"
 
     print "Starting pixel animation pattern %s on %s" % (pattern, config['LEDS'])
-    theaterChase(__strip__,\
-        createPixelMap(config['LEDS']),\
-        Color(127, 127, 127))
+    if __patterns__.get(pattern):
+        patternFunc = __patterns__[pattern]
+    else:
+        patternFunc = blink
+        print "Error: no known pattern %s" % pattern
+
+    patternFunc(__strip__,\
+        createPixelMap(config['LEDS']))
+
     print "Finishing pixel animation pattern %s on %s" % (pattern, config['LEDS'])
     return
 
 
 def createPixelMap(stringMap):
+    """ Translate a one based string description of addressed pixels into a zero based list """
     match = re.match(r"(\d+)-(\d+)", stringMap)
-    return range(int(match.group(1)), int(match.group(2))+1)
+    return range(int(match.group(1))-1, int(match.group(2)))
 
 class NeoPixel_Stub:
     def __init__(self, LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_BRIGHTNESS, LED_INVERT):
@@ -97,15 +168,24 @@ class NeoPixel_Stub:
         print "Setting pixel %s color %s" % (pixel, color)
         return
 
-#class Color:
-#    def __init__(self, R, G, B):
-#        self.R = R
-#        self.G = G
-#        self.B = B
+class Color:
+    def __init__(self, R, G, B):
+        self.R = R
+        self.G = G
+        self.B = B
 
 
+__patterns__ = {\
+   'blink': blink,\
+   'theaterChase': theaterChase,\
+   'colorWipe': colorWipe,\
+   'colourWipe': colorWipe,\
+   'rainbow': rainbow,\
+   'rainbowCycle': rainbowCycle,\
+   'theaterChaseRainbow': theaterChaseRainbow\
+}
 
-#__strip__
+
 if __name__ == "__main__":
     import sys
     #  config:
@@ -125,5 +205,5 @@ if __name__ == "__main__":
     #      PatternMap:
     #        '1': Blink
     #        '2': Chaser
-    match = re.match("Ping (\d+)", "Ping 2")
-    playPixels({'LEDS': '3-10', 'regex': 'Ping (\d+)', 'PatternMap': { '1': 'Blink', '2': 'Chaser'}}, match)
+    match = re.match("Ping (\d+)", sys.argv[1])
+    playPixels({'LEDS': '4-10', 'regex': 'Play (\d+)', 'PatternMap': { '1': 'blink', '2': 'theaterChase', '3': 'colorWipe', '4': 'rainbow', '5': 'rainbowCycle', '6': 'theaterChaseRainbow' }}, match)
