@@ -1,0 +1,41 @@
+---
+pi-indicator-config: 
+  sources:
+    nbntechlabs:
+      type: slack
+      apikey: <apikey>
+      username: pi-indicators
+    
+
+  dispatchers:
+    GitCommits:
+    # Git APP [4:24 PM] 
+    # michaeljoyce pushed to branch master of labs/labs (Compare changes)
+    # 415d9863: save Cu data to parquet files
+    # - michaeljoyce
+      pattern: "Git APP"
+      destination: GitCommitPixels
+      event: Dance
+  
+  sinks:
+    shield:
+      type: neopixel
+      config:
+        LED_COUNT: 8 # Number of LED pixels.
+        LED_PIN: 18 # GPIO pin connected to the pixels (must support PWM!).
+        LED_FREQ_HZ: 800000 # LED signal frequency in hertz (usually 800khz)
+        LED_DMA: 5 # DMA channel to use for generating signal (try 5)
+        LED_BRIGHTNESS: 20 # Set to 0 for darkest and 255 for brightest
+        LED_INVERT: False 
+      sink:
+        GitCommitPixels:
+          LEDS: 1-2
+          regex: Ping (\d+)
+          PatternMap:
+            '1': Blink
+            '2': Chaser
+        OtherPixels:
+          LEDS: 3-10
+          regex: (.*)
+          Pattern: Blink
+
