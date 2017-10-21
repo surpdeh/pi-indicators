@@ -1,22 +1,32 @@
 ---
 pi-indicator-config: 
+
+  # Sources collect and mediate input events
+  # Only currently supported source type is Slack
   sources:
     nbntechlabs:
       type: slack
       apikey: <apikey>
       username: pi-indicators
     
-
+  # Dispatcherse transform source events into intermediate events
+  # intermediate are labelled with an "event" but also carry the
+  # original message, and can be routed to a named destination sink
   dispatchers:
-    GitCommits:
-    # Git APP [4:24 PM] 
-    # michaeljoyce pushed to branch master of labs/labs (Compare changes)
+    Git:
     # 415d9863: save Cu data to parquet files
     # - michaeljoyce
-      pattern: "Git APP"
+      regex: "pushed to branch.*https://git"
       destination: GitCommitPixels
-      event: Dance
-  
+      event: push
+
+    EMR:
+      regex: "A new EMR"
+      destination: EMRPixels
+      event: new
+
+  # Sinks receive all events - source and intermediate 
+  # Only supported type is currently neopixel
   sinks:
     shield:
       type: neopixel
@@ -28,12 +38,19 @@ pi-indicator-config:
         LED_BRIGHTNESS: 10 # Set to 0 for darkest and 255 for brightest
         LED_INVERT: False 
       sink:
-        GitCommitPixels:
-          LEDS: 1-8
-          regex: Commit
-          pattern: blink
+        GitPixels:
+          LEDS: 1,8,16,24
+          PatternMap:
+            'push': theaterChaseRainbow
+        EMRPixels:
+          LEDS, 2,9,17,25
+          PatternMap:
+            'new': theaterChaseRainbow
+            'fail': alarm
         OtherPixels:
-          LEDS: 9-24
+          LEDS: 3-7,10-15,18-23,26-32
+        EntireShield:
+          LEDS: 1-32
           regex: Play pattern (\d+)
           PatternMap:
             '1': Blink
@@ -42,4 +59,5 @@ pi-indicator-config:
             '4': rainbow
             '5': rainbowCycle
             '6': theaterChaseRainbow
+            '7': alarm
 

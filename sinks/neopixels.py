@@ -2,8 +2,15 @@ import time
 import re
 
 def blink(strip, pixelmap, wait_ms=500, iterations=10):
+    blink(strip, pixelmap, wait_ms, Color(127,127,127))
+
+def alarm(strip, pixelmap, wait_ms=500, iterations=30):
+    blink(strip, pixelmap, wait_ms, iterations, Color(255, 0, 0))
+
+
+def blink(strip, pixelmap, wait_ms=500, iterations=10, color):
+
     """Simple 5 seconds of blinking 50% duty cycle"""
-    color = Color(127, 127, 127)
     for j in range(iterations):
         for c in (0, 1):
             for i in range(0, len(pixelmap)):
@@ -70,6 +77,8 @@ def theaterChaseRainbow(strip, pixelmap, wait_ms=50):
             time.sleep(wait_ms/1000.0)
             for i in range(0, len(pixelmap), 3):
                 strip.setPixelColor(pixelmap[(i+q) % len(pixelmap)], 0)
+
+def alarm(strip, pixelmap, wait_ms)
 
 
 # Create NeoPixel object with appropriate configuration.
@@ -151,9 +160,26 @@ def playPixels(config, match):
 
 
 def createPixelMap(stringMap):
-    """ Translate a one based string description of addressed pixels into a zero based list """
-    match = re.match(r"(\d+)-(\d+)", stringMap)
-    return range(int(match.group(1))-1, int(match.group(2)))
+    """ Translate a one based string description of addressed pixels into a zero based list
+    Supports: n-m,o,p,q-z style format """
+    result = []
+
+    # break up on commas
+    terms = re.split(",", stringMap)
+    if len(terms) > 1:
+        for token in terms:
+            result += createPixelMap(token.strip())
+    else:
+        # have either a bare number of x-y
+        match = re.match(r"(\d+)\s*-\s*(\d+)", stringMap)
+
+        if match:
+            return range(int(match.group(1))-1, int(match.group(2)))
+        else:
+            return [int(stringMap)-1]
+
+    return result
+
 
 class NeoPixel_Stub:
     def __init__(self, LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_BRIGHTNESS, LED_INVERT):

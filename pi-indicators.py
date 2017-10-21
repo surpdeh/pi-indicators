@@ -66,7 +66,7 @@ for sink,sink_config in piconfig['sinks'].items():
         pixelBlocks = sinks.neopixels.setup(sink_config)
         __sink_refs__.update(pixelBlocks)
 
-# run dispatcher
+# connect dispatcher to sources
 print "Starting source threads"
 for source in source_refs:
     print "."
@@ -74,6 +74,7 @@ for source in source_refs:
     t.daemon = True
     t.start()
 
+# and wait
 try:
     while True:
         time.sleep(1)
